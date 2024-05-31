@@ -68,7 +68,7 @@ def render_home_page():
 
     with col:
         st.markdown("<br><br>", unsafe_allow_html=True)
-        st.image(r"C:\Users\SAI SURYA TEJA\PycharmProjects\Deep Learning\Skill\kl.png", width=500)  # Replace with your own image path
+        st.image("kl.png", width=500)  # Replace with your own image path
 
     st.markdown(
         """
