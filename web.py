@@ -93,8 +93,6 @@ MODEL_PATHS = {
     "Tumor": os.path.join(os.path.dirname(__file__), "tumor.h5")
 }
 
-# Load your models (Assuming they are in the same directory as your script)
-# Use try-except to handle any potential errors during loading
 MODELS = {}
 for name, path in MODEL_PATHS.items():
     try:
