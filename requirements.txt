@@ -1,0 +1,4 @@
+tensorflow
+streamlit
+pillow
+matplotlib
