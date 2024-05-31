@@ -96,7 +96,7 @@ MODEL_PATHS = {
 MODELS = {}
 for name, path in MODEL_PATHS.items():
     try:
-        with CustomObjectScope({'GlorotUniform': glorot_uniform}):
+        with CustomObjectScope({'Orthogonal': glorot_uniform}):
             model = tf.keras.models.load_model(path)
         MODELS[name] = model
     except Exception as e:
