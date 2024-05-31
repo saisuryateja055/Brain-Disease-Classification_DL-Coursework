@@ -85,22 +85,22 @@ import tensorflow as tf
 from PIL import Image
 import numpy as np
 import os
-
 MODELS = {}
 for name, path in MODEL_PATHS.items():
     try:
         custom_objects = {'GlorotUniform': glorot_uniform}
         if name == "Brain Stroke":
             custom_objects = None  # Use default initializers for Brain Stroke model
-        model = tf.keras.models.load_model(path, custom_objects=custom_objects)
+        with CustomObjectScope(custom_objects):
+            model = tf.keras.models.load_model(path)
         MODELS[name] = model
     except Exception as e:
         st.error(f"Error loading model '{name}': {e}")
 
 
-# # Print model paths for debugging
-# for name, path in MODEL_PATHS.items():
-#     st.write(f"Model '{name}' path: {path}")
+# Print model paths for debugging
+for name, path in MODEL_PATHS.items():
+    st.write(f"Model '{name}' path: {path}")
 
 def load_image(image_file):
     image = Image.open(image_file)
