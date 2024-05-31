@@ -1,5 +1,7 @@
 
 import streamlit as st
+from keras.utils import CustomObjectScope
+from keras.initializers import glorot_uniform
 
 st.set_page_config(layout="wide")
 
@@ -84,8 +86,7 @@ from PIL import Image
 import numpy as np
 import os
 
-# Load your models (Assuming they are in the same directory as your script)
-# It's more efficient to load models once outside the function if possible, especially if the app is re-run often.
+# Define the path to the models
 MODEL_PATHS = {
     "Brain Stroke": os.path.join(os.path.dirname(__file__), "tumor.h5"),
     "Alzheimer's": os.path.join(os.path.dirname(__file__), "alzheimer.h5"),
@@ -93,8 +94,19 @@ MODEL_PATHS = {
 }
 
 # Load your models (Assuming they are in the same directory as your script)
-MODELS = {name: tf.keras.models.load_model(path) for name, path in MODEL_PATHS.items()}
+# Use try-except to handle any potential errors during loading
+MODELS = {}
+for name, path in MODEL_PATHS.items():
+    try:
+        with CustomObjectScope({'GlorotUniform': glorot_uniform}):
+            model = tf.keras.models.load_model(path)
+        MODELS[name] = model
+    except Exception as e:
+        st.error(f"Error loading model '{name}': {e}")
 
+# Print model paths for debugging
+for name, path in MODEL_PATHS.items():
+    st.write(f"Model '{name}' path: {path}")
 
 def load_image(image_file):
     image = Image.open(image_file)
