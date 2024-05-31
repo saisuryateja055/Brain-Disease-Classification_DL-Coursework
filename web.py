@@ -86,7 +86,7 @@ import numpy as np
 # Load your models (Assuming they are in the same directory as your script)
 # It's more efficient to load models once outside the function if possible, especially if the app is re-run often.
 MODELS = {
-    "Brain Stroke": tf.keras.models.load_model("brain_stroke.h5"),
+    "Brain Stroke": tf.keras.models.load_model("tumor.h5"),
     "Alzheimer's": tf.keras.models.load_model("alzheimer.h5"),
     "Tumor": tf.keras.models.load_model("tumor.h5")
 }
