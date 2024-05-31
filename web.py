@@ -86,21 +86,17 @@ from PIL import Image
 import numpy as np
 import os
 
-# Define the path to the models
-MODEL_PATHS = {
-    "Brain Stroke": os.path.join(os.path.dirname(__file__), "tumor.h5"),
-    "Alzheimer's": os.path.join(os.path.dirname(__file__), "alzheimer.h5"),
-    "Tumor": os.path.join(os.path.dirname(__file__), "tumor.h5")
-}
-
 MODELS = {}
 for name, path in MODEL_PATHS.items():
     try:
-        with CustomObjectScope({'Orthogonal': glorot_uniform}):
-            model = tf.keras.models.load_model(path)
+        custom_objects = {'GlorotUniform': glorot_uniform}
+        if name == "Brain Stroke":
+            custom_objects = None  # Use default initializers for Brain Stroke model
+        model = tf.keras.models.load_model(path, custom_objects=custom_objects)
         MODELS[name] = model
     except Exception as e:
         st.error(f"Error loading model '{name}': {e}")
+
 
 # # Print model paths for debugging
 # for name, path in MODEL_PATHS.items():
