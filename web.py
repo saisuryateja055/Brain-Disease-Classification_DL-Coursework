@@ -68,7 +68,7 @@ def render_home_page():
 
     with col:
         st.markdown("<br><br>", unsafe_allow_html=True)
-        st.image("brain1.png", width=500)  # Replace with your own image path
+        st.image("brain1.jpg", width=500)  # Replace with your own image path
 
     st.markdown(
         """
@@ -180,7 +180,7 @@ def render_about_page():
 
     # Brain Tumor
     with st.expander("Brain Tumor"):
-        st.image(r"tum.png", caption="Brain Tumor", width=300)
+        st.image(r"tum.jpeg", caption="Brain Tumor", width=300)
         st.write("""
         A brain tumor is a mass or growth of abnormal cells in your brain. Many different types of brain tumors exist. Some brain tumors are noncancerous (benign), and some brain tumors are cancerous (malignant). Brain tumors can begin in your brain (primary brain tumors), or cancer can begin in other parts of your body and spread to your brain (secondary, or metastatic, brain tumors).
         """)
@@ -196,7 +196,7 @@ def render_about_page():
 
     # Stroke
     with st.expander("Stroke"):
-        st.image(r"brain.jpeg", caption="Stroke", width=300)
+        st.image(r"brain.png", caption="Stroke", width=300)
         st.write("""
         A stroke occurs when the blood supply to part of your brain is interrupted or reduced, preventing brain tissue from getting oxygen and nutrients. Brain cells begin to die in minutes. A stroke is a medical emergency, and prompt treatment is crucial. Early action can reduce brain damage and other complications.
         """)
