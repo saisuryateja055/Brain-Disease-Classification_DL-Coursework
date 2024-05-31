@@ -102,9 +102,9 @@ for name, path in MODEL_PATHS.items():
     except Exception as e:
         st.error(f"Error loading model '{name}': {e}")
 
-# Print model paths for debugging
-for name, path in MODEL_PATHS.items():
-    st.write(f"Model '{name}' path: {path}")
+# # Print model paths for debugging
+# for name, path in MODEL_PATHS.items():
+#     st.write(f"Model '{name}' path: {path}")
 
 def load_image(image_file):
     image = Image.open(image_file)
