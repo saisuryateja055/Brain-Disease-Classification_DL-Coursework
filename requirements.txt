@@ -3,3 +3,4 @@ streamlit
 pillow
 matplotlib
 numpy
+h5py
