@@ -1,11 +1,34 @@
-import streamlit as st
-from keras.utils import CustomObjectScope
 import os
+import streamlit as st
+import tensorflow as tf
+from keras.utils import CustomObjectScope
 from keras.initializers import glorot_uniform
-import h5py
+from PIL import Image
+import numpy as np
 
+# Set page configuration
 st.set_page_config(layout="wide")
 
+# Define the path to the models
+MODEL_PATHS = {
+    "Brain Stroke": os.path.join(os.path.dirname(__file__), "brain_stroke.h5"),
+    "Alzheimer's": os.path.join(os.path.dirname(__file__), "alzheimer.h5"),
+    "Tumor": os.path.join(os.path.dirname(__file__), "tumor.h5")
+}
+
+# Function to load and return the models
+def load_models():
+    models = {}
+    for name, path in MODEL_PATHS.items():
+        try:
+            with CustomObjectScope({'GlorotUniform': glorot_uniform}):
+                models[name] = tf.keras.models.load_model(path)
+        except Exception as e:
+            st.error(f"Error loading model '{name}': {e}")
+    return models
+
+# Load the models at the start
+MODELS = load_models()
 
 def main():
     # Initialize the 'page' attribute if it's not already set
@@ -34,10 +57,30 @@ def main():
         render_classify_page()
     elif st.session_state.page == "About Brain Diseases":
         render_about_page()
-def set_page(page_name):
-    st.session_state.page = page_name
 
+# Function to load image and preprocess it
+def load_image(image_file):
+    image = Image.open(image_file)
+    image = image.resize((124, 124))  # Resize the image if your model expects a different size
+    image = np.array(image)
+    image = np.expand_dims(image, axis=0)  # Add batch dimension
+    return image
 
+# Function to generate report
+def generate_report(patient_name, patient_age, test_type, prediction_label):
+    report_text = f"""
+    Medical Report
+    --------------
+    Patient Name: {patient_name}
+    Patient Age: {patient_age}
+    Test Type: {test_type}
+    Prediction: {'Condition Positive' if prediction_label[0] == 1 else 'Condition Negative'}
+
+    Note: This is a preliminary assessment and not a definitive diagnosis.
+    """
+    return report_text
+
+# Function to render the home page
 def render_home_page():
     st.header("Welcome to the Brain Disease Classifier")
     st.markdown(
@@ -50,8 +93,7 @@ def render_home_page():
         </div>
         """, unsafe_allow_html=True)
 
-    # Use columns to create a more dynamic layout
-    col1, col2 ,col = st.columns(3)
+    col1, col2, col3 = st.columns(3)
 
     with col1:
         st.markdown("### Features of the App:")
@@ -69,8 +111,7 @@ def render_home_page():
             3. After uploading an image, view the classification results along with a detailed report.
         """)
 
-
-    with col:
+    with col3:
         st.markdown("<br><br>", unsafe_allow_html=True)
         st.image("brain1.jpg", width=500)  # Replace with your own image path
 
@@ -82,93 +123,44 @@ def render_home_page():
         </div>
         """, unsafe_allow_html=True)
 
-
-import tensorflow as tf
-from PIL import Image
-import numpy as np
-import os
-MODELS = {
-    "Brain Stroke": tf.keras.models.load_model("brain_stroke.h5"),
-    "Alzheimer's": tf.keras.models.load_model("alzheimer.h5"),
-    "Tumor": tf.keras.models.load_model("tumor.h5")
-}
-
-
-
-
-def load_image(image_file):
-    image = Image.open(image_file)
-    image = image.resize((124, 124))  # Resize the image if your model expects a different size
-    image = np.array(image)
-    image = np.expand_dims(image, axis=0)  # Add batch dimension
-    return image
-
-
+# Function to render the classify page
 def render_classify_page():
     st.header("Classify Your Brain Scan")
 
-    # Patient details input
     patient_name = st.text_input("Patient Name:")
     patient_age = st.text_input("Patient Age:")
 
-    # Step 1: Select the Test Type
     test_type = st.selectbox(
         "Select the type of test you want to take:",
         ("Alzheimer's", "Brain Stroke", "Tumor")
     )
 
-    # Step 2: Upload the MRI scan image
     uploaded_file = st.file_uploader("Upload your MRI scan image", type=['jpg', 'jpeg', 'png'])
 
-    # Only proceed if a file is uploaded and patient details are provided
     if uploaded_file is not None and patient_name and patient_age:
-        # Display the uploaded image
         st.image(uploaded_file, caption='Uploaded MRI scan.', use_column_width=True)
         image = load_image(uploaded_file)
 
-        # Call the model prediction function
         with st.spinner('Analyzing the MRI scan...'):
-            model = MODELS[test_type]  # Select the model based on the test type
-            prediction = model.predict(image)  # Make a prediction
-            prediction_label = np.argmax(prediction, axis=1)  # Example for categorical prediction
-            # Replace the above line with your model's prediction processing logic
+            model = MODELS[test_type]
+            prediction = model.predict(image)
+            prediction_label = np.argmax(prediction, axis=1)
 
-        # Step 3: Show the Prediction Results
-        # Display processed prediction
         st.write(f"Prediction: {'Condition Positive' if prediction_label[0] == 1 else 'Condition Negative'}")
 
-        # Step 4: Generate and Display the Report
         report = generate_report(patient_name, patient_age, test_type, prediction_label)
         st.write(report)
 
-        # Download button for the report
         st.download_button(label="Download Report", data=report, file_name="medical_report.txt", mime='text/plain')
 
-
-# Function for report generation
-def generate_report(patient_name, patient_age, test_type, prediction_label):
-    # Customize the report generation as per your model and requirements
-    report_text = f"""
-    Medical Report
-    --------------
-    Patient Name: {patient_name}
-    Patient Age: {patient_age}
-    Test Type: {test_type}
-    Prediction: {'Condition Positive' if prediction_label[0] == 1 else 'Condition Negative'}
-
-    Note: This is a preliminary assessment and not a definitive diagnosis.
-    """
-    return report_text
-
+# Function to render the about page
 def render_about_page():
     st.title("About Brain Diseases")
 
-    # Introduction or general information about brain diseases
     st.write("Brain diseases affect millions of people each year. This section provides information on some of the most common conditions, including Alzheimer's disease, brain tumors, and strokes. Click on each section below to learn more.")
 
-    # Alzheimer's Disease
     with st.expander("Alzheimer's Disease"):
-        st.image(r"alz.jpeg", caption="Alzheimer's Disease", width=300)
+        st.image("alz.jpeg", caption="Alzheimer's Disease", width=300)
         st.write("""
         Alzheimer's disease is a progressive neurologic disorder that causes the brain to shrink (atrophy) and brain cells to die. Alzheimer's disease is the most common cause of dementia — a continuous decline in thinking, behavioral and social skills that affects a person's ability to function independently.
         """)
@@ -182,9 +174,8 @@ def render_about_page():
                 **Treatment:** Treatments can temporarily slow the worsening of symptoms and improve quality of life for those with Alzheimer's disease and their caregivers.
                 """)
 
-    # Brain Tumor
     with st.expander("Brain Tumor"):
-        st.image(r"tum.jpeg", caption="Brain Tumor", width=300)
+        st.image("tum.jpeg", caption="Brain Tumor", width=300)
         st.write("""
         A brain tumor is a mass or growth of abnormal cells in your brain. Many different types of brain tumors exist. Some brain tumors are noncancerous (benign), and some brain tumors are cancerous (malignant). Brain tumors can begin in your brain (primary brain tumors), or cancer can begin in other parts of your body and spread to your brain (secondary, or metastatic, brain tumors).
         """)
@@ -198,9 +189,8 @@ def render_about_page():
                 **Treatment:** Treatment options include surgery, radiation therapy, chemotherapy, targeted drug therapy, and immunotherapy, depending on the type, size, and location of the tumor.
                 """)
 
-    # Stroke
     with st.expander("Stroke"):
-        st.image(r"brain.png", caption="Stroke", width=300)
+        st.image("brain.png", caption="Stroke", width=300)
         st.write("""
         A stroke occurs when the blood supply to part of your brain is interrupted or reduced, preventing brain tissue from getting oxygen and nutrients. Brain cells begin to die in minutes. A stroke is a medical emergency, and prompt treatment is crucial. Early action can reduce brain damage and other complications.
         """)
@@ -214,8 +204,5 @@ def render_about_page():
                 **Treatment:** Immediate treatment aims at restoring blood flow for an ischemic stroke or controlling bleeding for a hemorrhagic stroke. Long-term treatments focus on preventing future strokes and may include medication, surgery, and lifestyle changes.
                 """)
 
-
 if __name__ == '__main__':
     main()
-
-
