@@ -85,14 +85,22 @@ import tensorflow as tf
 from PIL import Image
 import numpy as np
 import os
+def load_model_without_time_major(path):
+    with h5py.File(path, 'r') as f:
+        model_config = f.attrs.get('model_config')
+        model_config = model_config.decode('utf-8')
+        model_config = model_config.replace('time_major": false', 'time_major": true')  # Modify if necessary
+    model = model_from_config(eval(model_config))
+    model.load_weights(path)
+    return model
+
+# Load your models
 MODELS = {}
 for name, path in MODEL_PATHS.items():
     try:
         custom_objects = {'GlorotUniform': glorot_uniform}
-        if name == "Brain Stroke":
-            custom_objects = None  # Use default initializers for Brain Stroke model
         with CustomObjectScope(custom_objects):
-            model = tf.keras.models.load_model(path)
+            model = load_model_without_time_major(path)
         MODELS[name] = model
     except Exception as e:
         st.error(f"Error loading model '{name}': {e}")
