@@ -4,11 +4,7 @@ import os
 from keras.initializers import glorot_uniform
 
 st.set_page_config(layout="wide")
-MODEL_PATHS = {
-    "Brain Stroke": os.path.join(os.path.dirname(__file__), "brain_stroke.h5"),
-    "Alzheimer's": os.path.join(os.path.dirname(__file__), "alzheimer.h5"),
-    "Tumor": os.path.join(os.path.dirname(__file__), "tumor.h5")
-}
+
 
 def main():
     # Initialize the 'page' attribute if it's not already set
@@ -99,6 +95,12 @@ def load_model_without_time_major(path):
     model.load_weights(path)
     return model
 
+
+MODEL_PATHS = {
+    "Brain Stroke": os.path.join(os.path.dirname(__file__), "brain_stroke.h5"),
+    "Alzheimer's": os.path.join(os.path.dirname(__file__), "alzheimer.h5"),
+    "Tumor": os.path.join(os.path.dirname(__file__), "tumor.h5")
+}
 # Load your models
 MODELS = {}
 for name, path in MODEL_PATHS.items():
