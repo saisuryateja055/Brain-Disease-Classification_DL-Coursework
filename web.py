@@ -1,14 +1,7 @@
-import os
 import streamlit as st
-import tensorflow as tf
-from keras.models import model_from_config
 from keras.utils import CustomObjectScope
 from keras.initializers import glorot_uniform
-from PIL import Image
-import numpy as np
-import h5py
 
-# Set page configuration
 st.set_page_config(layout="wide")
 
 def main():
@@ -38,79 +31,10 @@ def main():
         render_classify_page()
     elif st.session_state.page == "About Brain Diseases":
         render_about_page()
+def set_page(page_name):
+    st.session_state.page = page_name
 
-# Define the path to the models
-MODEL_PATHS = {
-    "Brain Stroke": os.path.join(os.path.dirname(__file__), "brain_stroke.h5"),
-    "Alzheimer's": os.path.join(os.path.dirname(__file__), "alzheimer.h5"),
-    "Tumor": os.path.join(os.path.dirname(__file__), "tumor.h5")
-}
 
-# Helper function to modify and load model configuration
-def load_model_without_time_major(path):
-    with h5py.File(path, 'r') as f:
-        model_config = f.attrs.get('model_config')
-        model_config = model_config.decode('utf-8')
-        model_config_dict = eval(model_config)
-        
-        # Remove 'time_major' argument if it exists
-        def remove_time_major(layer_config):
-            if 'time_major' in layer_config['config']:
-                del layer_config['config']['time_major']
-            return layer_config
-        
-        # Apply the removal to all layers in the model configuration
-        if 'layers' in model_config_dict['config']:
-            model_config_dict['config']['layers'] = [
-                remove_time_major(layer) for layer in model_config_dict['config']['layers']
-            ]
-        elif 'network' in model_config_dict['config']:
-            model_config_dict['config']['network'] = [
-                remove_time_major(layer) for layer in model_config_dict['config']['network']
-            ]
-
-    model = model_from_config(model_config_dict)
-    model.load_weights(path)
-    return model
-
-# Load your models
-MODELS = {}
-for name, path in MODEL_PATHS.items():
-    try:
-        custom_objects = {'GlorotUniform': glorot_uniform}
-        with CustomObjectScope(custom_objects):
-            model = load_model_without_time_major(path)
-        MODELS[name] = model
-    except Exception as e:
-        st.error(f"Error loading model '{name}': {e}")
-
-# Print model paths for debugging
-for name, path in MODEL_PATHS.items():
-    st.write(f"Model '{name}' path: {path}")
-
-# Function to load image and preprocess it
-def load_image(image_file):
-    image = Image.open(image_file)
-    image = image.resize((124, 124))  # Resize the image if your model expects a different size
-    image = np.array(image)
-    image = np.expand_dims(image, axis=0)  # Add batch dimension
-    return image
-
-# Function to generate report
-def generate_report(patient_name, patient_age, test_type, prediction_label):
-    report_text = f"""
-    Medical Report
-    --------------
-    Patient Name: {patient_name}
-    Patient Age: {patient_age}
-    Test Type: {test_type}
-    Prediction: {'Condition Positive' if prediction_label[0] == 1 else 'Condition Negative'}
-
-    Note: This is a preliminary assessment and not a definitive diagnosis.
-    """
-    return report_text
-
-# Function to render the home page
 def render_home_page():
     st.header("Welcome to the Brain Disease Classifier")
     st.markdown(
@@ -123,7 +47,8 @@ def render_home_page():
         </div>
         """, unsafe_allow_html=True)
 
-    col1, col2, col3 = st.columns(3)
+    # Use columns to create a more dynamic layout
+    col1, col2 ,col = st.columns(3)
 
     with col1:
         st.markdown("### Features of the App:")
@@ -141,7 +66,8 @@ def render_home_page():
             3. After uploading an image, view the classification results along with a detailed report.
         """)
 
-    with col3:
+
+    with col:
         st.markdown("<br><br>", unsafe_allow_html=True)
         st.image("brain1.jpg", width=500)  # Replace with your own image path
 
@@ -153,42 +79,107 @@ def render_home_page():
         </div>
         """, unsafe_allow_html=True)
 
-# Function to render the classify page
+
+import tensorflow as tf
+from PIL import Image
+import numpy as np
+import os
+def load_model_without_time_major(path):
+    with h5py.File(path, 'r') as f:
+        model_config = f.attrs.get('model_config')
+        model_config = model_config.decode('utf-8')
+        model_config = model_config.replace('time_major": false', 'time_major": true')  # Modify if necessary
+    model = model_from_config(eval(model_config))
+    model.load_weights(path)
+    return model
+
+# Load your models
+MODELS = {}
+for name, path in MODEL_PATHS.items():
+    try:
+        custom_objects = {'GlorotUniform': glorot_uniform}
+        with CustomObjectScope(custom_objects):
+            model = load_model_without_time_major(path)
+        MODELS[name] = model
+    except Exception as e:
+        st.error(f"Error loading model '{name}': {e}")
+
+
+# Print model paths for debugging
+for name, path in MODEL_PATHS.items():
+    st.write(f"Model '{name}' path: {path}")
+
+def load_image(image_file):
+    image = Image.open(image_file)
+    image = image.resize((124, 124))  # Resize the image if your model expects a different size
+    image = np.array(image)
+    image = np.expand_dims(image, axis=0)  # Add batch dimension
+    return image
+
+
 def render_classify_page():
     st.header("Classify Your Brain Scan")
 
+    # Patient details input
     patient_name = st.text_input("Patient Name:")
     patient_age = st.text_input("Patient Age:")
 
+    # Step 1: Select the Test Type
     test_type = st.selectbox(
         "Select the type of test you want to take:",
         ("Alzheimer's", "Brain Stroke", "Tumor")
     )
 
+    # Step 2: Upload the MRI scan image
     uploaded_file = st.file_uploader("Upload your MRI scan image", type=['jpg', 'jpeg', 'png'])
 
+    # Only proceed if a file is uploaded and patient details are provided
     if uploaded_file is not None and patient_name and patient_age:
+        # Display the uploaded image
         st.image(uploaded_file, caption='Uploaded MRI scan.', use_column_width=True)
         image = load_image(uploaded_file)
 
+        # Call the model prediction function
         with st.spinner('Analyzing the MRI scan...'):
-            model = MODELS[test_type]
-            prediction = model.predict(image)
-            prediction_label = np.argmax(prediction, axis=1)
+            model = MODELS[test_type]  # Select the model based on the test type
+            prediction = model.predict(image)  # Make a prediction
+            prediction_label = np.argmax(prediction, axis=1)  # Example for categorical prediction
+            # Replace the above line with your model's prediction processing logic
 
+        # Step 3: Show the Prediction Results
+        # Display processed prediction
         st.write(f"Prediction: {'Condition Positive' if prediction_label[0] == 1 else 'Condition Negative'}")
 
+        # Step 4: Generate and Display the Report
         report = generate_report(patient_name, patient_age, test_type, prediction_label)
         st.write(report)
 
+        # Download button for the report
         st.download_button(label="Download Report", data=report, file_name="medical_report.txt", mime='text/plain')
 
-# Function to render the about page
+
+# Function for report generation
+def generate_report(patient_name, patient_age, test_type, prediction_label):
+    # Customize the report generation as per your model and requirements
+    report_text = f"""
+    Medical Report
+    --------------
+    Patient Name: {patient_name}
+    Patient Age: {patient_age}
+    Test Type: {test_type}
+    Prediction: {'Condition Positive' if prediction_label[0] == 1 else 'Condition Negative'}
+
+    Note: This is a preliminary assessment and not a definitive diagnosis.
+    """
+    return report_text
+
 def render_about_page():
     st.title("About Brain Diseases")
 
+    # Introduction or general information about brain diseases
     st.write("Brain diseases affect millions of people each year. This section provides information on some of the most common conditions, including Alzheimer's disease, brain tumors, and strokes. Click on each section below to learn more.")
 
+    # Alzheimer's Disease
     with st.expander("Alzheimer's Disease"):
         st.image(r"alz.jpeg", caption="Alzheimer's Disease", width=300)
         st.write("""
@@ -204,6 +195,7 @@ def render_about_page():
                 **Treatment:** Treatments can temporarily slow the worsening of symptoms and improve quality of life for those with Alzheimer's disease and their caregivers.
                 """)
 
+    # Brain Tumor
     with st.expander("Brain Tumor"):
         st.image(r"tum.jpeg", caption="Brain Tumor", width=300)
         st.write("""
@@ -219,6 +211,7 @@ def render_about_page():
                 **Treatment:** Treatment options include surgery, radiation therapy, chemotherapy, targeted drug therapy, and immunotherapy, depending on the type, size, and location of the tumor.
                 """)
 
+    # Stroke
     with st.expander("Stroke"):
         st.image(r"brain.png", caption="Stroke", width=300)
         st.write("""
@@ -234,5 +227,8 @@ def render_about_page():
                 **Treatment:** Immediate treatment aims at restoring blood flow for an ischemic stroke or controlling bleeding for a hemorrhagic stroke. Long-term treatments focus on preventing future strokes and may include medication, surgery, and lifestyle changes.
                 """)
 
+
 if __name__ == '__main__':
     main()
+
+
