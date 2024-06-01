@@ -3,6 +3,11 @@ from keras.utils import CustomObjectScope
 from keras.initializers import glorot_uniform
 
 st.set_page_config(layout="wide")
+MODEL_PATHS = {
+    "Brain Stroke": os.path.join(os.path.dirname(__file__), "brain_stroke.h5"),
+    "Alzheimer's": os.path.join(os.path.dirname(__file__), "alzheimer.h5"),
+    "Tumor": os.path.join(os.path.dirname(__file__), "tumor.h5")
+}
 
 def main():
     # Initialize the 'page' attribute if it's not already set
