@@ -87,36 +87,14 @@ import tensorflow as tf
 from PIL import Image
 import numpy as np
 import os
-def load_model_without_time_major(path):
-    with h5py.File(path, 'r') as f:
-        model_config = f.attrs.get('model_config')
-        model_config = model_config.decode('utf-8')
-        model_config = model_config.replace('time_major": false', 'time_major": true')  # Modify if necessary
-    model = model_from_config(eval(model_config))
-    model.load_weights(path)
-    return model
-
-
-MODEL_PATHS = {
-    "Brain Stroke": os.path.join(os.path.dirname(__file__), "brain_stroke.h5"),
-    "Alzheimer's": os.path.join(os.path.dirname(__file__), "alzheimer.h5"),
-    "Tumor": os.path.join(os.path.dirname(__file__), "tumor.h5")
+MODELS = {
+    "Brain Stroke": tf.keras.models.load_model("brain_stroke.h5"),
+    "Alzheimer's": tf.keras.models.load_model("alzheimer.h5"),
+    "Tumor": tf.keras.models.load_model("tumor.h5")
 }
-# Load your models
-MODELS = {}
-for name, path in MODEL_PATHS.items():
-    try:
-        custom_objects = {'GlorotUniform': glorot_uniform}
-        with CustomObjectScope(custom_objects):
-            model = load_model_without_time_major(path)
-        MODELS[name] = model
-    except Exception as e:
-        st.error(f"Error loading model '{name}': {e}")
 
 
-# Print model paths for debugging
-# for name, path in MODEL_PATHS.items():
-#     st.write(f"Model '{name}' path: {path}")
+
 
 def load_image(image_file):
     image = Image.open(image_file)
