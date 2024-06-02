@@ -8,7 +8,7 @@ from tensorflow.keras import layers
 
 
 def structure_datasets(base_dir="/content/Brain-Disease-Classification/datasets"):
-  for dataset in os.listdir(base_dir):
+  for dataset in os.listdir(base_dir): 
     ds_path = os.path.join(base_dir, dataset)
     print(ds_path)
     conts = os.listdir(ds_path)
